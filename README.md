@@ -2,7 +2,7 @@
 My twist on a couple of Nagios check plugins used to monitor an ITWatchDogs/Geist Watchdog-15
 
 
-Usage: check_temp_weathergoose.sh -H <HOSTADDRESS> [-f] [-o <OID>] -w <warning range> -c <critical range>
+Usage: check_temp_weathergoose.sh -H \<HOSTADDRESS\> [-f] [-o \<OID\>] -w \<warning range\> -c \<critical range\>
 
 -H - The IP address of the Weathergoose
 
@@ -19,7 +19,7 @@ Usage: check_temp_weathergoose.sh -H <HOSTADDRESS> [-f] [-o <OID>] -w <warning r
 Ranges should be : delimited, ex: 70:80
 
 
-Usage: check_humid_weathergoose.sh -H <HOSTADDRESS> [-f] [-o <OID>] -w <warning range> -c <critical range>
+Usage: check_humid_weathergoose.sh -H \<HOSTADDRESS\> [-f] [-o \<OID\>] -w \<warning range\> -c \<critical range\>
 
 -H - The IP address of the Weathergoose
 
