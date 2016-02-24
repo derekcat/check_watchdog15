@@ -21,10 +21,10 @@ do
 			;;
 	o)	OID="$OPTARG"
 			;;
-	h)	printf "Usage: check_humid_weathergoose.sh -H <HOSTADDRESS> [-f] [-o <OID>] -w <warning range> -c <critical range>\n\n-H - The IP address of the Weathergoose\n-C - SNMP Community\n-f - Convert output to Fahrenheit\n-o - OID to override the default\n-w - Warning Range\n-c - Critical Range\nRanges should be : delimited, ex: 70:80\n"
+	h)	printf "Usage: check_humid_weathergoose.sh -H <HOSTADDRESS> [-f] [-o <OID>] -w <warning range> -c <critical range>\n\n-H - The IP address of the Weathergoose\n-C - SNMP Community\n-o - OID to override the default\n-w - Warning Range\n-c - Critical Range\nRanges should be : delimited, ex: 70:80\n"
 		exit 3
 			;;
-	?)	printf "Usage: check_humid_weathergoose.sh -H <HOSTADDRESS> [-f] [-o <OID>] -w <warning range> -c <critical range>\n\n-H - The IP address of the Weathergoose\n-C - SNMP Community\n-f - Convert output to Fahrenheit\n-o - OID to override the default\n-w - Warning Range\n-c - Critical Range\nRanges should be : delimited, ex: 70:80\n"
+	?)	printf "Usage: check_humid_weathergoose.sh -H <HOSTADDRESS> [-f] [-o <OID>] -w <warning range> -c <critical range>\n\n-H - The IP address of the Weathergoose\n-C - SNMP Community\n-o - OID to override the default\n-w - Warning Range\n-c - Critical Range\nRanges should be : delimited, ex: 70:80\n"
 		exit 3
 			;;
 	esac
