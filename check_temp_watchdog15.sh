@@ -1,92 +1,103 @@
 #!/bin/bash
+# Updated from bbrunning's version: 
+# https://exchange.nagios.org/directory/Plugins/Hardware/Environmental/check_temp_watchdog15-%26-check_humidity_watchdog15/details
+# By Derek DeMoss, for Dark Horse Comics, Inc. 2016
+# Set all variables to caps, added option to set OID, fixed help to -h properly, commented a million things
 
-fflag=0
-hostaddress=
-community=
+FAHRENHEIT_FLAG=0 # Defaults to Celsius
+HOSTADDRESS="1.2.3.4" # Initialized to junk
+COMMUNITY="public" # Typical default
+OID=".1.3.6.1.4.1.21239.5.1.2.1.5.1" # This the default for the Dark Horse Watchdog 15
 
-while getopts 'H:fC:c:w:' OPTION
+while getopts 'H:fC:c:w:o:h' OPTION
 do
-	case $OPTION in
-	H)	hostaddress="$OPTARG"
-			;;
-	C)	community="$OPTARG"
-			;;
-	c)	criticalrange="$OPTARG"
-			;;
-	w)	warningrange="$OPTARG"
-			;;
-	f)	fflag=1
-			;;
-	?)	printf "Usage: check_temp_weathergoose.sh -H <hostaddress> [-f] -w <warning> -c <critical>\n\n-H - The IP address of the Weathergoose\n-C - SNMP Community\n-f - Convert output to Fahrenheit\n-w - Warning Range\n-c - Critical Range"
-			exit 3
-			;;
-	esac
+        case $OPTION in
+        H)      HOSTADDRESS="$OPTARG"
+                        ;;
+        C)      COMMUNITY="$OPTARG"
+                        ;;
+        c)      CRITICAL_RANGE="$OPTARG"
+                        ;;
+        w)      WARNING_RANGE="$OPTARG"
+                        ;;
+        o)      OID="$OPTARG"
+                        ;;
+        f)      FAHRENHEIT_FLAG=1
+                        ;;
+        h)      printf "Usage: check_temp_weathergoose.sh -H <HOSTADDRESS> [-f] [-o <OID>] -w <warning range> -c <critical range>\n\n-H - The IP address of the Weathergoose\n-C - SNMP Community\n-f - Convert output to Fahrenheit\n-o - OID to override the default\n-w - Warning Range\n-c - Critical Range\nRanges should be : delimited, ex: 70:80\n"
+                exit 3
+                        ;;
+        ?)      printf "Usage: check_temp_weathergoose.sh -H <HOSTADDRESS> [-f] [-o <OID>] -w <warning range> -c <critical range>\n\n-H - The IP address of the Weathergoose\n-C - SNMP Community\n-f - Convert output to Fahrenheit\n-o - OID to override the default\n-w - Warning Range\n-c - Critical Range\nRanges should be : delimited, ex: 70:80\n"
+                exit 3
+                        ;;
+        esac
 done
-shift $(($OPTIND - 1))
-snmpcommand="snmpwalk -c ${community} -v 1 -O vq ${hostaddress} 1.3.6.1.4.1.17373.4.1.2.1.5" 
-temp=`$snmpcommand`
-if [ $fflag == 1 ]
-	
-	then temp=$((($temp/10))) 
+
+#shift $(($OPTIND - 1)) # I don't think we need this, as we won't check OPTIND again -Derek
+TEMP=`snmpget -c ${COMMUNITY} -v 1 -O vq ${HOSTADDRESS} $OID`
+
+if [ $FAHRENHEIT_FLAG == 1 ]
+        then
+                TEMP=$((($TEMP/10))) # The Watchdog 15 outputs the temp as a multi hundred number, ex: 823
+fi
+#status=3 # What's this for?
+
+if [ "$CRITICAL_RANGE" != "" ]
+        then
+                CRITICAL_LOW=${CRITICAL_RANGE%%:*} # Grab the first half of CRITICAL_RANGE
+                CRITICAL_HIGH=${CRITICAL_RANGE#*:} # Grab the second half of CRITICAL_RANGE
+        if [ "$CRITICAL_LOW" != "" ] && [ $TEMP -le "$CRITICAL_LOW" ] # If the temperature is TOO low
+                then
+                        if [ $FAHRENHEIT_FLAG == 1 ]
+                                then
+                                        echo "TEMP CRITICAL LOW - $TEMP F|'Temp (F)'=$TEMP;$WARNING_RANGE;$CRITICAL_RANGE;30;120"
+                                else
+                                        echo "TEMP CRITICAL LOW - $TEMP C|'Temp (C)'=$TEMP;$WARNING_RANGE;$CRITICAL_RANGE;0;50"
+                        fi
+                        exit 2
+        fi
+        if [ "$CRITICAL_HIGH" != "" ] && [ $TEMP -ge "$CRITICAL_HIGH" ] # If the temperature is TOO high
+                then
+                        if [ $FAHRENHEIT_FLAG == 1 ]
+                                then
+                                        echo "TEMP CRITICAL HIGH - $TEMP F|'Temp (F)'=$TEMP;$WARNING_RANGE;$CRITICAL_RANGE;30;120"
+                                else
+                                        echo "TEMP CRITICAL HIGH - $TEMP C|'Temp (C)'=$TEMP;$WARNING_RANGE;$CRITICAL_RANGE;0;50"
+                        fi
+                        exit 2
+        fi
 fi
 
-status=3
-
-if [ "$criticalrange" != "" ]
-	then
-		criticallow=${criticalrange%%:*}
-		criticalhigh=${criticalrange#*:}
-	if [ "$criticallow" != "" ] && [ $temp -le "$criticallow" ]
-		then
-			if [ $fflag == 1 ]
-				then
-					echo "TEMP CRITICAL LOW - $temp F|'Temp (F)'=$temp;$warningrange;$criticalrange;30;120"
-				else
-					echo "TEMP CRITICAL LOW - $temp C|'Temp (C)'=$temp;$warningrange;$criticalrange;0;50"
-			fi
-			exit 2
-	fi
-	if [ "$criticalhigh" != "" ] && [ $temp -ge "$criticalhigh" ]
-		then
-			if [ $fflag == 1 ]
-				then
-					echo "TEMP CRITICAL HIGH - $temp F|'Temp (F)'=$temp;$warningrange;$criticalrange;30;120"
-				else
-					echo "TEMP CRITICAL HIGH - $temp C|'Temp (C)'=$temp;$warningrange;$criticalrange;0;50"
-			fi
-			exit 2
-	fi
+if [ "$WARNING_RANGE" != "" ]
+        then
+                WARNING_LOW=${WARNING_RANGE%%:*} # Grab the first half of WARNING_RANGE
+                WARNING_HIGH=${WARNING_RANGE#*:} # Grab the second half of WARNING_RANGE
+        if [ "$WARNING_LOW" != "" ] && [ $TEMP -le "$WARNING_LOW" ] # If the temperature is TOO low
+                then
+                        if [ $FAHRENHEIT_FLAG == 1 ]
+                                then
+                                        echo "TEMP LOW WARNING - $TEMP F|'Temp (F)'=$TEMP;$WARNING_RANGE;$CRITICAL_RANGE;30;120"
+                                else
+                                        echo "TEMP LOW WARNING - $TEMP C|'Temp (C)'=$TEMP;$WARNING_RANGE;$CRITICAL_RANGE;0;50"
+                        fi
+                        exit 1
+        fi
+        if [ "$WARNING_HIGH" != "" ] && [ $TEMP -ge "$WARNING_HIGH" ] # If the temperature is TOO high
+                then
+                        if [ $FAHRENHEIT_FLAG == 1 ]
+                                then
+                                        echo "TEMP HIGH WARNING - $TEMP F|'Temp (F)'=$TEMP;$WARNING_RANGE;$CRITICAL_RANGE;30;120"
+                                else
+                                        echo "TEMP HIGH WARNING - $TEMP C|'Temp (C)'=$TEMP;$WARNING_RANGE;$CRITICAL_RANGE;0;50"
+                        fi
+                        exit 1
+        fi
 fi
 
-if [ "$warningrange" != "" ]
-	then
-		warninglow=${warningrange%%:*}
-		warninghigh=${warningrange#*:}
-	if [ "$warninglow" != "" ] && [ $temp -le "$warninglow" ]
-		then
-			if [ $fflag == 1 ]
-				then
-					echo "TEMP LOW WARNING - $temp F|'Temp (F)'=$temp;$warningrange;$criticalrange;30;120"
-				else
-					echo "TEMP LOW WARNING - $temp C|'Temp (C)'=$temp;$warningrange;$criticalrange;0;50"
-			fi
-			exit 2
-	fi
-	if [ "$warninghigh" != "" ] && [ $temp -ge "$warninghigh" ]
-		then
-			if [ $fflag == 1 ]
-				then
-					echo "TEMP HIGH WARNING - $temp F|'Temp (F)'=$temp;$warningrange;$criticalrange;30;120"
-				else
-					echo "TEMP HIGH WARNING - $temp C|'Temp (C)'=$temp;$warningrange;$criticalrange;0;50"
-			fi
-			exit 2
-	fi
-fi
-if [ $fflag == 1 ]
-	then
-		echo "TEMP OK - $temp F|'Temp (F)'=$temp;$warningrange;$criticalrange;30;120"
-	else
-		echo "TEMP OK - $temp C|'Temp (C)'=$temp;$warningrange;$criticalrange;0;50"
+if [ $FAHRENHEIT_FLAG == 1 ]
+        then
+                echo "TEMP OK - $TEMP F|'Temp (F)'=$TEMP;$WARNING_RANGE;$CRITICAL_RANGE;30;120"
+        else
+                echo "TEMP OK - $TEMP C|'Temp (C)'=$TEMP;$WARNING_RANGE;$CRITICAL_RANGE;0;50"
 fi
 exit 0
